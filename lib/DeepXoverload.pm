@@ -3,6 +3,66 @@ package DeepXoverload;
 use 5.006;
 use strict;
 use warnings;
+use UNIVERSAL::Object;
+use Scalar::Util qw/reftype blessed/;
+
+use overload 
+    "x" => "deepx";
+
+our @ISA; BEGIN { @ISA = 'UNIVERSAL::Object' };
+
+our %HAS;
+
+BEGIN {
+    %HAS = ( 
+        data  => sub { '' },
+        store => sub { [] }, 
+        stash => sub { {} },
+    );
+};
+
+sub deepx {
+    my ($obj, $times) = @_;
+    
+    my @array;
+    for (1..$times) {
+		my $copy = _copy($obj);
+		push @array, $copy;
+	}
+    return \@array;
+}
+
+sub _copy {
+    my ($to_copy) = @_;
+
+    my $blessed = blessed $to_copy;
+    my $copy = _deep_copy($to_copy);
+    return $blessed ? bless $copy, $blessed : $copy;
+}
+
+sub _deep_copy {
+    my ($to_copy) = @_; 	
+	if (reftype(\$to_copy) eq 'SCALAR') {
+        return $to_copy;
+	}
+	elsif (reftype($to_copy) eq 'HASH') {
+        return {
+            map +($_ => _copy($to_copy->{$_})), keys %$to_copy
+        };
+    }
+    elsif (reftype($to_copy) eq 'ARRAY') {
+        return [ map _copy($_), @$to_copy ];
+    }
+	return $to_copy;
+}
+
+sub data {
+    return $_[0]->{data};
+}
+
+1;
+
+__END__
 
 =head1 NAME
 
